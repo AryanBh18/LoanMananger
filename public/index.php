@@ -158,7 +158,7 @@
                     </select>
                 </div>
             </div>
-            <button class="btn btn-primary">+ Nieuwe Lening</button>
+            <a href="../public/leningen.php" class="btn btn-primary">+ Nieuwe Lening</a>
         </div>
         <div class="card">
             <div class="card-body">
