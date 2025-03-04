@@ -17,6 +17,6 @@ if ($lening && $lening['lening_status'] !== 'Goedgekeurd') {
     $stmt->execute([$leningid]);
 }
 
-header("Location: index.php");
+header("Location: ../index.php");
 exit;
 ?>
