@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare("INSERT INTO leningen (klantid, lening_bedrag, lening_duur, rente, datum_aanvraag) VALUES (?, ?, ?, ?, CURDATE())");
             $stmt->execute([$klantid, $lening_bedrag, $lening_duur, $rente]);
 
-            header("Location: ./index.php");
+            header("Location: index.php");
             exit;
         } catch (Exception $e) {
             echo "<p>Fout bij het toevoegen: " . $e->getMessage() . "</p>";

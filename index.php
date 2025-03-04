@@ -131,8 +131,8 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </td>
                         <td class="py-2 px-4"><?= htmlspecialchars($lening['datum_aanvraag']) ?></td>
                         <td class="py-2 px-4 flex space-x-2">
-                            <a href="edit_loan.php?leningid=<?= $lening['leningid'] ?>" class="text-blue-600"><i class="fas fa-edit"></i></a>
-                            <a href="delete_loan.php?leningid=<?= $lening['leningid'] ?>" onclick="return confirm('Weet je zeker dat je deze lening wilt verwijderen?')" class="text-red-600"><i class="fas fa-trash"></i></a>
+                            <a href="includes/edit_leningen.php?leningid=<?= $lening['leningid'] ?>" class="text-blue-600"><i class="fas fa-edit"></i></a>
+                            <a href="includes/delete_leningen.php?leningid=<?= $lening['leningid'] ?>" onclick="return confirm('Weet je zeker dat je deze lening wilt verwijderen?')" class="text-red-600"><i class="fas fa-trash"></i></a>
                         </td>
                     </tr>
                     <?php endforeach; ?>

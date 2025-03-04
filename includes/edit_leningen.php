@@ -49,7 +49,7 @@ if (!$lening) {
                     <option value="Afgesloten" <?= $lening['lening_status'] === 'Afgesloten' ? 'selected' : '' ?>>Afgesloten</option>
                 </select>
             </label>
-            <button type="submit" class="bg-blue-600 text-white p-2 rounded">Opslaan</button>
+              <button type="submit" class="bg-blue-600 text-white p-2 rounded">Opslaan</button>
         </form>
     </div>
 </body>
