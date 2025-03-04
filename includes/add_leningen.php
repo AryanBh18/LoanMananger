@@ -2,30 +2,34 @@
 require 'config.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Get and sanitize input values
     $klant_naam = trim($_POST['klant_naam']);
     $klant_email = trim($_POST['klant_email']);
     $lening_bedrag = $_POST['lening_bedrag'];
     $lening_duur = $_POST['lening_duur'];
     $rente = $_POST['rente'];
 
-    if (empty($klant_naam) || empty($klant_email) || empty($lening_bedrag) || empty($lening_duur) || empty($rente)) {
-        echo "<p>Vul alle velden in.</p>";
-    } else {
-        try {
-            // Voeg klant toe
-            $stmt = $pdo->prepare("INSERT INTO klanten (klant_naam, klant_email) VALUES (?, ?)");
-            $stmt->execute([$klant_naam, $klant_email]);
-            $klantid = $pdo->lastInsertId();
+    // Check if the customer exists in the klanten table based on name and email
+    $stmt = $pdo->prepare("SELECT klantid FROM klanten WHERE klant_naam = ? AND klant_email = ?");
+    $stmt->execute([$klant_naam, $klant_email]);
+    $klantid = $stmt->fetchColumn();
 
-            // Voeg lening toe
-            $stmt = $pdo->prepare("INSERT INTO leningen (klantid, lening_bedrag, lening_duur, rente, datum_aanvraag) VALUES (?, ?, ?, ?, CURDATE())");
-            $stmt->execute([$klantid, $lening_bedrag, $lening_duur, $rente]);
-
-            header("Location: index.php");
+    if ($klantid) {
+        // Customer exists, proceed to insert the loan
+        $stmt = $pdo->prepare("INSERT INTO leningen (klantid, lening_bedrag, lening_duur, rente, datum_aanvraag) VALUES (?, ?, ?, ?, CURDATE())");
+        if ($stmt->execute([$klantid, $lening_bedrag, $lening_duur, $rente])) {
+            // Insertion successful
+            header("Location: ../index.php?message=De lening is succesvol aangemaakt.");
             exit;
-        } catch (Exception $e) {
-            echo "<p>Fout bij het toevoegen: " . $e->getMessage() . "</p>";
+        } else {
+            // Insertion failed
+            header("Location: ../index.php?error=Er is een fout opgetreden bij het aanmaken van de lening.");
+            exit;
         }
+    } else {
+        // Customer does not exist
+        header("Location: ../index.php?error=Ongeldig klant naam of email. De lening kan niet worden aangemaakt.");
+        exit;
     }
 }
 ?>
