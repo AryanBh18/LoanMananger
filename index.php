@@ -32,7 +32,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="flex space-x-6">
             <a href="#" class="text-white flex items-center"><i class="fas fa-home mr-2"></i>Home</a>
             <a href="./includes/add_leningen.php" class="text-white flex items-center"><i class="fas fa-plus mr-2"></i>Nieuwe Lening</a>
-            <a href="#" class="text-white flex items-center"><i class="fas fa-users mr-2"></i>Klanten</a>
+            <a href="./includes/add_klanten.php" class="text-white flex items-center"><i class="fas fa-users mr-2"></i>Klanten</a>
             <a href="calculator.php" class="text-white flex items-center"><i class="fas fa-calculator mr-2"></i>Calculator</a>
         </div>
         <div class="text-white">
