@@ -125,9 +125,7 @@ $klanten = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <td class="px-6 py-4 whitespace-nowrap"><?php echo htmlspecialchars($klant['geboorte_datum']); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap"><?php echo htmlspecialchars($klant['created_at']); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        <a href="./edit_klant.php?id=<?php echo $klant['klantid']; ?>" class="text-blue-600 hover:text-blue-900 mr-3">
-                                            <i class="fas fa-edit"></i> Bewerken
-                                        </a>
+                                      
                                        
                                         <a href="./delete_klant.php?id=<?php echo $klant['klantid']; ?>" 
                                            onclick="return confirm('Weet je zeker dat je deze klant wilt verwijderen?')" 
