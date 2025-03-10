@@ -1,150 +1,56 @@
 <?php
 require './includes/config.php';
-// Initialize filter variables
-$search = isset($_GET['search']) ? trim($_GET['search']) : '';
-$status_filter = isset($_GET['status']) ? $_GET['status'] : '';
-$date_from = isset($_GET['date_from']) ? $_GET['date_from'] : '';
-$date_to = isset($_GET['date_to']) ? $_GET['date_to'] : '';
-$amount_min = isset($_GET['amount_min']) ? $_GET['amount_min'] : '';
-$amount_max = isset($_GET['amount_max']) ? $_GET['amount_max'] : '';
-$sort_by = isset($_GET['sort_by']) ? $_GET['sort_by'] : 'datum_aanvraag';
-$sort_order = isset($_GET['sort_order']) ? $_GET['sort_order'] : 'DESC';
-// Get status for filter dropdown
-$status_query = $pdo->query("SELECT DISTINCT lening_status FROM leningen");
-$status_options = $status_query->fetchAll(PDO::FETCH_COLUMN);
-// Build WHERE clause
-$whereConditions = [];
-$params = [];
-if (!empty($search)) {
-    $whereConditions[] = "(k.klant_naam LIKE ? OR k.klant_email LIKE ?)";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
-}
-if (!empty($status_filter)) {
-    $whereConditions[] = "l.lening_status = ?";
-    $params[] = $status_filter;
-}
-if (!empty($date_from)) {
-    $whereConditions[] = "l.datum_aanvraag >= ?";
-    $params[] = $date_from;
-}
-if (!empty($date_to)) {
-    $whereConditions[] = "l.datum_aanvraag <= ?";
-    $params[] = $date_to;
-}
-if (!empty($amount_min)) {
-    $whereConditions[] = "l.lening_bedrag >= ?";
-    $params[] = $amount_min;
-}
-if (!empty($amount_max)) {
-    $whereConditions[] = "l.lening_bedrag <= ?";
-    $params[] = $amount_max;
-}
-$whereClause = !empty($whereConditions) ? "WHERE " . implode(" AND ", $whereConditions) : "";
-// Validate sort parameters to prevent SQL injection
-$valid_sort_columns = ['klant_naam', 'lening_bedrag', 'lening_duur', 'rente', 'lening_status', 'datum_aanvraag'];
-$sort_by = in_array($sort_by, $valid_sort_columns) ? $sort_by : 'datum_aanvraag';
-$valid_sort_orders = ['ASC', 'DESC'];
-$sort_order = in_array(strtoupper($sort_order), $valid_sort_orders) ? strtoupper($sort_order) : 'DESC';
-// Prepare the query
+require './includes/filters.php';
+require './includes/stats.php';  
+
+// Bepaal of geavanceerde filters actief zijn
+$advancedFiltersActive = (!empty($date_from) || !empty($date_to) || 
+                         !empty($amount_min) || !empty($amount_max));
+
+// Controleer of de "Groeperen per klant" filter is geselecteerd
+$group_by_customer = isset($_GET['group_by_customer']) ? $_GET['group_by_customer'] : 'no';
+
+// Basisquery
 $query = "
-    SELECT l.leningid, k.klant_naam, k.klant_email, l.lening_bedrag, l.lening_duur, l.rente, l.lening_status, l.datum_aanvraag
+    SELECT l.leningid, k.klant_naam, k.klant_email, l.lening_bedrag, 
+           l.lening_duur, l.rente, l.lening_status, l.datum_aanvraag
     FROM leningen l
     JOIN klanten k ON l.klantid = k.klantid
     $whereClause
-    ORDER BY " . ($sort_by === 'klant_naam' ? 'k.klant_naam' : "l.$sort_by") . " $sort_order
 ";
-// Execute query with parameters
+
+// Als "Groeperen per klant" is ingeschakeld, pas groepering toe
+if ($group_by_customer === 'yes') {
+    $query = "
+        SELECT 
+            k.klantid,
+            k.klant_naam,
+            k.klant_email,
+            l.lening_status,
+            SUM(l.lening_bedrag) AS totaal_bedrag,
+            COUNT(*) AS aantal_leningen
+        FROM leningen l
+        JOIN klanten k ON l.klantid = k.klantid
+        $whereClause
+        GROUP BY k.klantid, l.lening_status
+        ORDER BY k.klant_naam ASC, FIELD(l.lening_status, 'Goedgekeurd', 'In behandeling', 'Afgekeurd', 'Afgesloten')
+    ";
+} else {
+    // Anders blijft de query ongewijzigd
+    $query .= " ORDER BY " . ($sort_by === 'klant_naam' ? 'k.klant_naam' : "l.$sort_by") . " $sort_order";
+}
+
 $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
-// Calculate statistics
-$totalLoans = $pdo->query("SELECT COUNT(*) FROM leningen")->fetchColumn();
-$approvedLoans = $pdo->query("SELECT COUNT(*) FROM leningen WHERE lening_status = 'Goedgekeurd'")->fetchColumn();
-$rejectedLoans = $pdo->query("SELECT COUNT(*) FROM leningen WHERE lening_status = 'Afgekeurd'")->fetchColumn();
-$pendingLoans = $pdo->query("SELECT COUNT(*) FROM leningen WHERE lening_status = 'In behandeling'")->fetchColumn();
-// Determine if advanced filters are active
-$advancedFiltersActive = (!empty($date_from) || !empty($date_to) || !empty($amount_min) || !empty($amount_max));
 ?>
 <!DOCTYPE html>
 <html lang="nl">
 <head>
     <title>BankLoan Pro Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./styles/index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body {
-            font-family: 'Inter', 'Segoe UI', sans-serif;
-            background-color: #f5f7fa;
-        }
-        .nav-link {
-            transition: all 0.2s;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-        }
-        .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-        .stat-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-            border-left: 4px solid transparent;
-        }
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        .total-card { border-left-color: #3B82F6; }
-        .approved-card { border-left-color: #10B981; }
-        .rejected-card { border-left-color: #EF4444; }
-        .pending-card { border-left-color: #F59E0B; }
-        .filter-input, .filter-select {
-            border: 1px solid #E5E7EB;
-            border-radius: 0.375rem;
-            padding: 0.625rem;
-            transition: all 0.2s;
-            background-color: #F9FAFB;
-        }
-        .filter-input:focus, .filter-select:focus {
-            border-color: #3B82F6;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-            background-color: #FFFFFF;
-        }
-        .table-container {
-            overflow-x: auto;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-        }
-        .table-header {
-            background-color: #F3F4F6;
-            font-weight: 600;
-            color: #4B5563;
-        }
-        .loan-table tr {
-            transition: background-color 0.2s;
-        }
-        .loan-table tr:hover {
-            background-color: #F9FAFB;
-        }
-        .avatar {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            font-weight: 600;
-            color: white;
-        }
-        .action-button {
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            transition: background-color 0.2s;
-        }
-        .action-button:hover {
-            background-color: #F3F4F6;
-        }
-    </style>
 </head>
 <body>
     <!-- Top navigation -->
@@ -234,247 +140,232 @@ $advancedFiltersActive = (!empty($date_from) || !empty($date_to) || !empty($amou
                 </div>
             </div>
         </div>
-        <!-- Filter Form -->
-        <div class="bg-white rounded-lg shadow-sm mb-8">
-            <div class="p-5 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-800 flex items-center">
-                    <i class="fas fa-filter mr-2 text-blue-600"></i>
-                    Zoek & Filter Leningen
-                </h2>
+  <!-- Filter Form -->
+<div class="bg-white rounded-lg shadow-sm mb-8">
+    <div class="p-5 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-800 flex items-center">
+            <i class="fas fa-filter mr-2 text-blue-600"></i>
+            Zoek & Filter Leningen
+        </h2>
+    </div>
+    <form method="GET" action="" class="p-5">
+        <!-- Basic filters -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <!-- Search input -->
+            <div>
+                <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Zoek klant</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    <input type="text" id="search" name="search" placeholder="Naam of e-mail..." 
+                           value="<?= htmlspecialchars($search) ?>" 
+                           class="filter-input w-full pl-10">
+                </div>
             </div>
-            <form method="GET" action="" class="p-5">
-                <!-- Basic filters -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    <!-- Search input -->
-                    <div>
-                        <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Zoek klant</label>
+            <!-- Status filter -->
+            <div>
+                <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <div class="relative">
+                    <select id="status" name="status" class="filter-select w-full appearance-none">
+                        <option value="">Alle statussen</option>
+                        <?php foreach ($status_options as $option): ?>
+                            <option value="<?= $option ?>" <?= $status_filter === $option ? 'selected' : '' ?>>
+                                <?= $option ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <i class="fas fa-chevron-down text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+            <!-- Groeperen per klant -->
+            <div>
+                <label for="group_by_customer" class="block text-sm font-medium text-gray-700 mb-1">Groeperen</label>
+                <div class="relative">
+                    <select id="group_by_customer" name="group_by_customer" class="filter-select w-full appearance-none">
+                        <option value="no" <?= $group_by_customer === 'no' ? 'selected' : '' ?>>Uitgeschakeld</option>
+                        <option value="yes" <?= $group_by_customer === 'yes' ? 'selected' : '' ?>>Per klant</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <i class="fas fa-chevron-down text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Advanced filters section -->
+        <div id="advancedFilters" class="border-t border-gray-100 pt-5" <?= $advancedFiltersActive ? '' : 'style="display: none;"' ?>>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                <!-- Date range -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Datum bereik</label>
+                    <div class="grid grid-cols-2 gap-4">
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-search text-gray-400"></i>
+                                <i class="fas fa-calendar-alt text-gray-400"></i>
                             </div>
-                            <input type="text" id="search" name="search" placeholder="Naam of e-mail..." 
-                                   value="<?= htmlspecialchars($search) ?>" 
+                            <input type="date" id="date_from" name="date_from" 
+                                   value="<?= htmlspecialchars($date_from) ?>" 
+                                   class="filter-input w-full pl-10">
+                        </div>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-calendar-alt text-gray-400"></i>
+                            </div>
+                            <input type="date" id="date_to" name="date_to" 
+                                   value="<?= htmlspecialchars($date_to) ?>" 
                                    class="filter-input w-full pl-10">
                         </div>
                     </div>
-                    <!-- Status filter -->
-                    <div>
-                        <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                </div>
+                <!-- Amount range -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Bedrag bereik</label>
+                    <div class="grid grid-cols-2 gap-4">
                         <div class="relative">
-                            <select id="status" name="status" class="filter-select w-full appearance-none">
-                                <option value="">Alle statussen</option>
-                                <?php foreach ($status_options as $option): ?>
-                                    <option value="<?= $option ?>" <?= $status_filter === $option ? 'selected' : '' ?>>
-                                        <?= $option ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                <i class="fas fa-chevron-down text-gray-400"></i>
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500">SRD</span>
                             </div>
+                            <input type="number" id="amount_min" name="amount_min" step="0.01" min="0"
+                                   placeholder="Min"
+                                   value="<?= htmlspecialchars($amount_min) ?>" 
+                                   class="filter-input w-full pl-8">
                         </div>
-                    </div>
-                    <!-- Sort options -->
-                    <div>
-                        <label for="sort_by" class="block text-sm font-medium text-gray-700 mb-1">Sorteer op</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <div class="col-span-2 relative">
-                                <select id="sort_by" name="sort_by" class="filter-select w-full appearance-none">
-                                    <option value="datum_aanvraag" <?= $sort_by === 'datum_aanvraag' ? 'selected' : '' ?>>Datum</option>
-                                    <option value="klant_naam" <?= $sort_by === 'klant_naam' ? 'selected' : '' ?>>Klantnaam</option>
-                                    <option value="lening_bedrag" <?= $sort_by === 'lening_bedrag' ? 'selected' : '' ?>>Bedrag</option>
-                                    <option value="lening_duur" <?= $sort_by === 'lening_duur' ? 'selected' : '' ?>>Looptijd</option>
-                                    <option value="lening_status" <?= $sort_by === 'lening_status' ? 'selected' : '' ?>>Status</option>
-                                </select>
-                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <i class="fas fa-chevron-down text-gray-400"></i>
-                                </div>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500">SRD</span>
                             </div>
-                            <div class="relative">
-                                <select id="sort_order" name="sort_order" class="filter-select w-full appearance-none">
-                                    <option value="ASC" <?= $sort_order === 'ASC' ? 'selected' : '' ?>>
-                                        <i class="fas fa-arrow-up"></i> ↑
-                                    </option>
-                                    <option value="DESC" <?= $sort_order === 'DESC' ? 'selected' : '' ?>>
-                                        <i class="fas fa-arrow-down"></i> ↓
-                                    </option>
-                                </select>
-                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <i class="fas fa-chevron-down text-gray-400"></i>
-                                </div>
-                            </div>
+                            <input type="number" id="amount_max" name="amount_max" step="0.01" min="0"
+                                   placeholder="Max"
+                                   value="<?= htmlspecialchars($amount_max) ?>" 
+                                   class="filter-input w-full pl-8">
                         </div>
                     </div>
                 </div>
-                <!-- Advanced filters section -->
-                <div id="advancedFilters" class="border-t border-gray-100 pt-5" <?= $advancedFiltersActive ? '' : 'style="display: none;"' ?>>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                        <!-- Date range -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Datum bereik</label>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <i class="fas fa-calendar-alt text-gray-400"></i>
-                                    </div>
-                                    <input type="date" id="date_from" name="date_from" 
-                                           value="<?= htmlspecialchars($date_from) ?>" 
-                                           class="filter-input w-full pl-10">
-                                </div>
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <i class="fas fa-calendar-alt text-gray-400"></i>
-                                    </div>
-                                    <input type="date" id="date_to" name="date_to" 
-                                           value="<?= htmlspecialchars($date_to) ?>" 
-                                           class="filter-input w-full pl-10">
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Amount range -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Bedrag bereik</label>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500">SRD</span>
-                                    </div>
-                                    <input type="number" id="amount_min" name="amount_min" step="0.01" min="0"
-                                           placeholder="Min"
-                                           value="<?= htmlspecialchars($amount_min) ?>" 
-                                           class="filter-input w-full pl-8">
-                                </div>
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500">SRD</span>
-                                    </div>
-                                    <input type="number" id="amount_max" name="amount_max" step="0.01" min="0"
-                                           placeholder="Max"
-                                           value="<?= htmlspecialchars($amount_max) ?>" 
-                                           class="filter-input w-full pl-8">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex justify-between items-center pt-2">
-                    <a href="#" id="toggleFilters" onclick="toggleAdvancedFilters(); return false;" 
-                       class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
-                        <i class="fas fa-sliders-h mr-1"></i>
-                        <span id="toggleText"><?= $advancedFiltersActive ? 'Verberg geavanceerde filters' : 'Toon geavanceerde filters' ?></span>
-                    </a>
-                    <div class="space-x-2">
-                        <a href="./" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition duration-200 inline-block">
-                            <i class="fas fa-redo-alt mr-1"></i> Herstel
-                        </a>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200">
-                            <i class="fas fa-search mr-1"></i> Zoeken
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-        <!-- Loans table -->
-        <div class="table-container bg-white mb-6">
-            <table class="min-w-full loan-table">
-                <thead>
-                    <tr class="table-header">
-                        <th class="py-3 px-4 text-left">Klant</th>
-                        <th class="py-3 px-4 text-left">Bedrag</th>
-                        <th class="py-3 px-4 text-left">Looptijd</th>
-                        <th class="py-3 px-4 text-left">Rente</th>
-                        <th class="py-3 px-4 text-left">Status</th>
-                        <th class="py-3 px-4 text-left">Datum Aanvraag</th>
-                        <th class="py-3 px-4 text-left">Acties</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (count($lendingen) > 0): ?>
-                        <?php foreach ($lendingen as $lening): ?>
-                        <?php 
-                            // Generate a color for the avatar based on customer name
-                            $colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-yellow-500', 'bg-indigo-500'];
-                            $colorIndex = crc32($lening['klant_naam']) % count($colors);
-                            $avatarColor = $colors[$colorIndex];
-                        ?>
-                        <tr class="border-t">
-                            <td class="py-3 px-4">
-                                <div class="flex items-center">
-                                    <div class="avatar <?= $avatarColor ?>">
-                                        <?= strtoupper(substr($lening['klant_naam'], 0, 2)) ?>
-                                    </div>
-                                    <div class="ml-3">
-                                        <p class="font-medium text-gray-800"><?= htmlspecialchars($lening['klant_naam']) ?></p>
-                                        <p class="text-gray-500 text-sm"><?= htmlspecialchars($lening['klant_email']) ?></p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="py-3 px-4 font-medium">SRD <?= number_format($lening['lening_bedrag'], 2, ',', '.') ?></td>
-                            <td class="py-3 px-4"><?= $lening['lening_duur'] ?> maanden</td>
-                            <td class="py-3 px-4"><?= number_format($lening['rente'], 2, ',', '.') ?>%</td>
-                            <td class="py-3 px-4">
-                                <span class="
-                                    <?= $lening['lening_status'] === 'In behandeling' ? 'bg-yellow-100 text-yellow-800' : '' ?>
-                                    <?= $lening['lening_status'] === 'Goedgekeurd' ? 'bg-green-100 text-green-800' : '' ?>
-                                    <?= $lening['lening_status'] === 'Afgekeurd' ? 'bg-red-100 text-red-800' : '' ?>
-                                    <?= $lening['lening_status'] === 'Afgesloten' ? 'bg-gray-100 text-gray-800' : '' ?>
-                                    py-1 px-3 rounded-full text-xs font-medium
-                                ">
-                                    <?= htmlspecialchars($lening['lening_status']) ?>
-                                </span>
-                            </td>
-                            <td class="py-3 px-4 text-gray-600"><?= date('d-m-Y', strtotime($lening['datum_aanvraag'])) ?></td>
-                            <td class="py-3 px-4">
-                                <div class="flex space-x-1">
-                                    <a href="includes/view_lening.php?leningid=<?= $lening['leningid'] ?>" 
-                                       class="action-button text-blue-600" title="Bekijken">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="includes/edit_leningen.php?leningid=<?= $lening['leningid'] ?>" 
-                                       class="action-button text-yellow-600" title="Bewerken">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="includes/delete_leningen.php?leningid=<?= $lening['leningid'] ?>" 
-                                       onclick="return confirm('Weet je zeker dat je deze lening wilt verwijderen?')" 
-                                       class="action-button text-red-600" title="Verwijderen">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr class="border-t">
-                            <td colspan="7" class="py-12 px-4 text-center">
-                                <div class="flex flex-col items-center justify-center">
-                                    <i class="fas fa-search text-gray-300 text-5xl mb-3"></i>
-                                    <p class="text-gray-500 mb-1">Geen leningen gevonden die aan de zoekcriteria voldoen.</p>
-                                    <p class="text-gray-400 text-sm">Probeer andere zoekfilters of klik op 'Herstel'.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-        <!-- Pagination -->
-        <div class="flex justify-between items-center">
-            <div class="text-sm text-gray-600">
-                Pagina 1 van 1
             </div>
-            <div class="flex space-x-1">
-                <button disabled class="px-3 py-1 rounded border border-gray-200 text-gray-400 bg-gray-50">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <button class="px-3 py-1 rounded border border-blue-600 bg-blue-600 text-white">
-                    1
-                </button>
-                <button disabled class="px-3 py-1 rounded border border-gray-200 text-gray-400 bg-gray-50">
-                    <i class="fas fa-chevron-right"></i>
+        </div>
+        <div class="flex justify-between items-center pt-2">
+            <a href="#" id="toggleFilters" onclick="toggleAdvancedFilters(); return false;" 
+               class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                <i class="fas fa-sliders-h mr-1"></i>
+                <span id="toggleText"><?= $advancedFiltersActive ? 'Verberg geavanceerde filters' : 'Toon geavanceerde filters' ?></span>
+            </a>
+            <div class="space-x-2">
+                <a href="./" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition duration-200 inline-block">
+                    <i class="fas fa-redo-alt mr-1"></i> Herstel
+                </a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200">
+                    <i class="fas fa-search mr-1"></i> Zoeken
                 </button>
             </div>
         </div>
-    </div>
+    </form>
+</div>
+ <!-- Loans table -->
+<div class="table-container bg-white mb-6">
+    <table class="min-w-full loan-table">
+        <thead>
+            <tr class="table-header">
+                <th class="py-3 px-4 text-left">Klant</th>
+                <th class="py-3 px-4 text-left"><?= $group_by_customer === 'yes' ? 'Totaal Bedrag' : 'Bedrag' ?></th>
+                <th class="py-3 px-4 text-left"><?= $group_by_customer === 'yes' ? 'Aantal Leningen' : 'Looptijd' ?></th>
+                <th class="py-3 px-4 text-left">Status</th>
+                <th class="py-3 px-4 text-left"><?= $group_by_customer === 'yes' ? '' : 'Rente' ?></th>
+                <th class="py-3 px-4 text-left"><?= $group_by_customer === 'yes' ? '' : 'Datum Aanvraag' ?></th>
+                <th class="py-3 px-4 text-left">Acties</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (count($lendingen) > 0): ?>
+                <?php foreach ($lendingen as $lening): ?>
+                <?php 
+                    // Generate a color for the avatar based on customer name
+                    $colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-yellow-500', 'bg-indigo-500'];
+                    $colorIndex = crc32($lening['klant_naam']) % count($colors);
+                    $avatarColor = $colors[$colorIndex];
+                ?>
+                <tr class="border-t">
+                    <td class="py-3 px-4">
+                        <div class="flex items-center">
+                            <div class="avatar <?= $avatarColor ?>">
+                                <?= strtoupper(substr($lening['klant_naam'], 0, 2)) ?>
+                            </div>
+                            <div class="ml-3">
+                                <p class="font-medium text-gray-800"><?= htmlspecialchars($lening['klant_naam']) ?></p>
+                                <p class="text-gray-500 text-sm"><?= htmlspecialchars($lening['klant_email']) ?></p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 font-medium">
+                        <?= $group_by_customer === 'yes' 
+                            ? 'SRD ' . number_format($lening['totaal_bedrag'], 2, ',', '.') 
+                            : 'SRD ' . number_format($lening['lening_bedrag'], 2, ',', '.') ?>
+                    </td>
+                    <td class="py-3 px-4">
+                        <?= $group_by_customer === 'yes' 
+                            ? $lening['aantal_leningen'] 
+                            : $lening['lening_duur'] . ' maanden' ?>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="
+                            <?= $lening['lening_status'] === 'In behandeling' ? 'bg-yellow-100 text-yellow-800' : '' ?>
+                            <?= $lening['lening_status'] === 'Goedgekeurd' ? 'bg-green-100 text-green-800' : '' ?>
+                            <?= $lening['lening_status'] === 'Afgekeurd' ? 'bg-red-100 text-red-800' : '' ?>
+                            <?= $lening['lening_status'] === 'Afgesloten' ? 'bg-gray-100 text-gray-800' : '' ?>
+                            py-1 px-3 rounded-full text-xs font-medium
+                        ">
+                            <?= htmlspecialchars($lening['lening_status']) ?>
+                        </span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <?= $group_by_customer === 'yes' ? '' : number_format($lening['rente'], 2, ',', '.') . '%' ?>
+                    </td>
+                    <td class="py-3 px-4 text-gray-600">
+                        <?= $group_by_customer === 'yes' ? '' : date('d-m-Y', strtotime($lening['datum_aanvraag'])) ?>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="flex space-x-1">
+                            <?php if ($group_by_customer === 'yes'): ?>
+                                <!-- When grouped by customer, show view customer action -->
+                                <a href="includes/view_klant.php?klantid=<?= $lening['klantid'] ?>" 
+                                   class="action-button text-blue-600" title="Bekijk klant">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            <?php else: ?>
+                                <!-- Normal view with individual loan actions -->
+                                <a href="includes/view_lening.php?leningid=<?= $lening['leningid'] ?>" 
+                                   class="action-button text-blue-600" title="Bekijken">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="includes/edit_leningen.php?leningid=<?= $lening['leningid'] ?>" 
+                                   class="action-button text-yellow-600" title="Bewerken">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="includes/delete_leningen.php?leningid=<?= $lening['leningid'] ?>" 
+                                   onclick="return confirm('Weet je zeker dat je deze lening wilt verwijderen?')" 
+                                   class="action-button text-red-600" title="Verwijderen">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr class="border-t">
+                    <td colspan="7" class="py-12 px-4 text-center">
+                        <div class="flex flex-col items-center justify-center">
+                            <i class="fas fa-search text-gray-300 text-5xl mb-3"></i>
+                            <p class="text-gray-500 mb-1">Geen leningen gevonden die aan de zoekcriteria voldoen.</p>
+                            <p class="text-gray-400 text-sm">Probeer andere zoekfilters of klik op 'Herstel'.</p>
+                        </div>
+                    </td>
+                </tr>
+            <?php endif; ?>
+        </tbody>
+    </table>
+</div>
     <!-- Footer -->
     <footer class="bg-white border-t mt-12 py-4">
         <div class="container mx-auto px-4 text-center text-sm text-gray-500">
