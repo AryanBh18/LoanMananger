@@ -9,6 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $klant_naam = trim($_POST['klant_naam']);
     $klant_email = trim($_POST['klant_email']);
     $klant_telefoon = trim($_POST['klant_telefoon']);
+    $klant_address = trim($_POST['klant_address']);
+    $geboorte_datum = trim($_POST['geboorte_datum']);
     
     // Check if the customer already exists in the klanten table based on name and email
     $stmt = $pdo->prepare("SELECT klantid FROM klanten WHERE klant_naam = ? AND klant_email = ?");
@@ -20,8 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = '<div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">Client bestaat al.</div>';
     } else {
         // Client does not exist, proceed to insert the new client
-        $stmt = $pdo->prepare("INSERT INTO klanten (klant_naam, klant_email, klant_telefoon, created_at) VALUES (?, ?, ?, NOW())");
-        if ($stmt->execute([$klant_naam, $klant_email, $klant_telefoon])) {
+        $stmt = $pdo->prepare("INSERT INTO klanten (klant_naam, klant_email, klant_telefoon, klant_address, geboorte_datum, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
+        if ($stmt->execute([$klant_naam, $klant_email, $klant_telefoon, $klant_address, $geboorte_datum])) {
             // Insertion successful
             $message = '<div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4">Klant is succesvol toegevoegd!</div>';
         } else {
@@ -74,6 +76,16 @@ $klanten = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <input type="text" id="klant_telefoon" name="klant_telefoon" required class="w-full p-2 border rounded">
                     </label>
                 </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <label for="klant_address" class="block">
+                        Adres:
+                        <input type="text" id="klant_address" name="klant_address" required class="w-full p-2 border rounded">
+                    </label>
+                    <label for="geboorte_datum" class="block">
+                        Geboortedatum:
+                        <input type="date" id="geboorte_datum" name="geboorte_datum" required class="w-full p-2 border rounded">
+                    </label>
+                </div>
                 <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">
                     <i class="fas fa-plus mr-2"></i>Klant Toevoegen
                 </button>
@@ -96,6 +108,8 @@ $klanten = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Naam</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefoon</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adres</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Geboortedatum</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aangemaakt op</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acties</th>
                             </tr>
@@ -107,6 +121,8 @@ $klanten = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <td class="px-6 py-4 whitespace-nowrap"><?php echo htmlspecialchars($klant['klant_naam']); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap"><?php echo htmlspecialchars($klant['klant_email']); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap"><?php echo htmlspecialchars($klant['klant_telefoon']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap"><?php echo htmlspecialchars($klant['klant_address']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap"><?php echo htmlspecialchars($klant['geboorte_datum']); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap"><?php echo htmlspecialchars($klant['created_at']); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                                         <a href="edit_klant.php?id=<?php echo $klant['klantid']; ?>" class="text-blue-600 hover:text-blue-900 mr-3">
