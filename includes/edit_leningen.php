@@ -8,10 +8,13 @@ if (!isset($_GET['leningid'])) {
 $leningid = $_GET['leningid'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $lening_bedrag = $_POST['lening_bedrag'];
+    $lening_duur = $_POST['lening_duur'];
+    $rente = $_POST['rente'];
     $lening_status = $_POST['lening_status'];
 
-    $stmt = $pdo->prepare("UPDATE leningen SET lening_status = ? WHERE leningid = ?");
-    $stmt->execute([$lening_status, $leningid]);
+    $stmt = $pdo->prepare("UPDATE leningen SET lening_bedrag = ?, lening_duur = ?, rente = ?, lening_status = ? WHERE leningid = ?");
+    $stmt->execute([$lening_bedrag, $lening_duur, $rente, $lening_status, $leningid]);
 
     header("Location: ../index.php");
     exit;
@@ -40,16 +43,32 @@ if (!$lening) {
     <div class="container mx-auto p-6">
         <h1 class="text-3xl font-bold mb-4">Lening Bewerken</h1>
         <form method="POST" class="space-y-4">
-            <label for="lening_status" class="block">
+            <label class="block">
+                Bedrag (€):
+                <input type="number" name="lening_bedrag" value="<?= htmlspecialchars($lening['lening_bedrag']) ?>" required class="w-full p-2 border rounded">
+            </label>
+
+            <label class="block">
+                Looptijd (maanden):
+                <input type="number" name="lening_duur" value="<?= htmlspecialchars($lening['lening_duur']) ?>" required class="w-full p-2 border rounded">
+            </label>
+
+            <label class="block">
+                Rente (%):
+                <input type="number" step="0.01" name="rente" value="<?= htmlspecialchars($lening['rente']) ?>" required class="w-full p-2 border rounded">
+            </label>
+
+            <label class="block">
                 Status:
-                <select id="lening_status" name="lening_status" required class="w-full p-2 border rounded">
+                <select name="lening_status" required class="w-full p-2 border rounded">
                     <option value="In behandeling" <?= $lening['lening_status'] === 'In behandeling' ? 'selected' : '' ?>>In behandeling</option>
                     <option value="Goedgekeurd" <?= $lening['lening_status'] === 'Goedgekeurd' ? 'selected' : '' ?>>Goedgekeurd</option>
                     <option value="Afgekeurd" <?= $lening['lening_status'] === 'Afgekeurd' ? 'selected' : '' ?>>Afgekeurd</option>
                     <option value="Afgesloten" <?= $lening['lening_status'] === 'Afgesloten' ? 'selected' : '' ?>>Afgesloten</option>
                 </select>
             </label>
-              <button type="submit" class="bg-blue-600 text-white p-2 rounded">Opslaan</button>
+
+            <button type="submit" class="bg-blue-600 text-white p-2 rounded">Opslaan</button>
         </form>
     </div>
 </body>
