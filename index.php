@@ -68,7 +68,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <a href="./includes/add_leningen.php" class="text-white nav-link flex items-center">
                 <i class="fas fa-plus mr-2"></i>Nieuwe Lening
             </a>
-            <a href="./includes/add_klanten.php" class="text-white nav-link flex items-center">
+            <a href="klanten.php" class="text-white nav-link flex items-center">
                 <i class="fas fa-users mr-2"></i>Klanten
             </a>
         </div>
