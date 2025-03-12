@@ -1,5 +1,5 @@
 <?php
-    // Initialize filter variables
+    // Initialisatie
     $search = isset($_GET['search']) ? trim($_GET['search']) : '';
     $status_filter = isset($_GET['status']) ? $_GET['status'] : '';
     $date_from = isset($_GET['date_from']) ? $_GET['date_from'] : '';
@@ -9,11 +9,10 @@
     $sort_by = isset($_GET['sort_by']) ? $_GET['sort_by'] : 'datum_aanvraag';
     $sort_order = isset($_GET['sort_order']) ? $_GET['sort_order'] : 'DESC';
     
-    // Get status for filter dropdown
     $status_query = $pdo->query("SELECT DISTINCT lening_status FROM leningen");
     $status_options = $status_query->fetchAll(PDO::FETCH_COLUMN);
 
-    // Build WHERE clause
+    // basic filters
     $whereConditions = [];
     $params = [];
     if (!empty($search)) {
@@ -43,7 +42,7 @@
     }
     $whereClause = !empty($whereConditions) ? "WHERE " . implode(" AND ", $whereConditions) : "";
 
-    // Validate sort parameters to prevent SQL injection
+    // Extra Security
     $valid_sort_columns = ['klant_naam', 'lening_bedrag', 'lening_duur', 'rente', 'lening_status', 'datum_aanvraag'];
     $sort_by = in_array($sort_by, $valid_sort_columns) ? $sort_by : 'datum_aanvraag';
     $valid_sort_orders = ['ASC', 'DESC'];

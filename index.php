@@ -68,7 +68,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <a href="./includes/add_leningen.php" class="text-white nav-link flex items-center">
                 <i class="fas fa-plus mr-2"></i>Nieuwe Lening
             </a>
-            <a href="klanten.php" class="text-white nav-link flex items-center">
+            <a href="./pages/klanten.php" class="text-white nav-link flex items-center">
                 <i class="fas fa-users mr-2"></i>Klanten
             </a>
         </div>
@@ -334,10 +334,6 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 </a>
                             <?php else: ?>
                                 <!-- Normal view with individual loan actions -->
-                                <a href="includes/view_lening.php?leningid=<?= $lening['leningid'] ?>" 
-                                   class="action-button text-blue-600" title="Bekijken">
-                                    <i class="fas fa-eye"></i>
-                                </a>
                                 <a href="includes/edit_leningen.php?leningid=<?= $lening['leningid'] ?>" 
                                    class="action-button text-yellow-600" title="Bewerken">
                                     <i class="fas fa-edit"></i>

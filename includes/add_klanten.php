@@ -1,6 +1,4 @@
 <?php
-require 'config.php';
-
 $message = '';
 
 // Handle the form submission for adding a new client

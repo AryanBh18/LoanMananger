@@ -1,13 +1,7 @@
 <?php
-require './includes/add_klanten.php';  
-
-
-
+require '../includes/config.php';
+require '../includes/add_klanten.php';  
 ?>
-
-
-
-
 <!DOCTYPE html>
 <html lang="nl">
 <head>

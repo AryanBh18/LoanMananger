@@ -1,5 +1,5 @@
 <?php
-// Calculate statistics using single optimized query
+// Aryan!! dit is voor het tellen van die Statussen
 $statsQuery = $pdo->query("
     SELECT 
         COUNT(*) AS total,
