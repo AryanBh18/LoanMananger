@@ -90,7 +90,7 @@ require '../includes/add_klanten.php';
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                                       
                                        
-                                        <a href="./delete_klant.php?id=<?php echo $klant['klantid']; ?>" 
+                                        <a href="../includes/delete_klant.php?id=<?php echo $klant['klantid']; ?>" 
                                            onclick="return confirm('Weet je zeker dat je deze klant wilt verwijderen?')" 
                                            class="text-red-600 hover:text-red-900">
                                             <i class="fas fa-trash"></i> Verwijderen

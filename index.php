@@ -4,7 +4,7 @@ require './includes/filters.php';
 require './includes/stats.php';  
 require './includes/groepering.php';
 
-// Bepaal of geavanceerde filters actief zijn
+// checken of geavanceerde filters actief is.
 $advancedFiltersActive = (!empty($date_from) || !empty($date_to) || 
                          !empty($amount_min) || !empty($amount_max));
 

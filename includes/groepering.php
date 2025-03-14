@@ -1,5 +1,5 @@
 <?php
-// Aryan Bhaggoe!!! als dit is voor die groepering van die ene thingy die juf heeft veranderd
+// Aryan Bhaggoe!!! dit is voor die groepering van die ene thingy die juf heeft veranderd
 function buildQuery($group_by_customer, $whereClause, $sort_by, $sort_order) {
     if ($group_by_customer === 'yes') {
         $query = "
