@@ -7,11 +7,12 @@ require '../includes/add_leningen.php';
 <head>
     <title>Nieuwe Lening Toevoegen</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-gray-100">
     <nav class="bg-blue-900 p-4 flex justify-between items-center">
         <div class="text-white text-xl font-bold">BankLoan Pro</div>
-        <a href="../index.php" class="text-white flex items-center"><i class="fas fa-arrow-left mr-2"></i>Terug</a>
+        <a href="../index.php" class="text-white flex items-center"><i class="fas fa-home mr-3"></i>Dashboard</a>
     </nav>
     
     <div class="container mx-auto p-6">

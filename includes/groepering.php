@@ -17,7 +17,7 @@ function buildQuery($group_by_customer, $whereClause, $sort_by, $sort_order) {
             ORDER BY k.klant_naam ASC, FIELD(l.lening_status, 'Goedgekeurd', 'In behandeling', 'Afgekeurd', 'Afgesloten')
         ";
     } else {
-        // Default query without grouping
+        // Default query without grouping, dus basically die like ding gaat niet opgeteld worden
         $query = "
             SELECT l.leningid, k.klant_naam, k.klant_email, l.lening_bedrag, 
                    l.lening_duur, l.rente, l.lening_status, l.datum_aanvraag
