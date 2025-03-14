@@ -2,6 +2,7 @@
 require './includes/config.php';
 require './includes/filters.php';
 require './includes/stats.php';  
+require './includes/groepering.php';
 
 // Bepaal of geavanceerde filters actief zijn
 $advancedFiltersActive = (!empty($date_from) || !empty($date_to) || 
@@ -10,35 +11,8 @@ $advancedFiltersActive = (!empty($date_from) || !empty($date_to) ||
 // Controleer of de "Groeperen per klant" filter is geselecteerd
 $group_by_customer = isset($_GET['group_by_customer']) ? $_GET['group_by_customer'] : 'no';
 
-// Basisquery
-$query = "
-    SELECT l.leningid, k.klant_naam, k.klant_email, l.lening_bedrag, 
-           l.lening_duur, l.rente, l.lening_status, l.datum_aanvraag
-    FROM leningen l
-    JOIN klanten k ON l.klantid = k.klantid
-    $whereClause
-";
-
-// Als "Groeperen per klant" is ingeschakeld, pas groepering toe
-if ($group_by_customer === 'yes') {
-    $query = "
-        SELECT 
-            k.klantid,
-            k.klant_naam,
-            k.klant_email,
-            l.lening_status,
-            SUM(l.lening_bedrag) AS totaal_bedrag,
-            COUNT(*) AS aantal_leningen
-        FROM leningen l
-        JOIN klanten k ON l.klantid = k.klantid
-        $whereClause
-        GROUP BY k.klantid, l.lening_status
-        ORDER BY k.klant_naam ASC, FIELD(l.lening_status, 'Goedgekeurd', 'In behandeling', 'Afgekeurd', 'Afgesloten')
-    ";
-} else {
-    // Anders blijft de query ongewijzigd
-    $query .= " ORDER BY " . ($sort_by === 'klant_naam' ? 'k.klant_naam' : "l.$sort_by") . " $sort_order";
-}
+// Use the query builder function to construct the query
+$query = buildQuery($group_by_customer, $whereClause, $sort_by, $sort_order);
 
 $stmt = $pdo->prepare($query);
 $stmt->execute($params);
@@ -62,13 +36,13 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </div>
         <div class="flex space-x-2">
-            <a href="#" class="text-white nav-link flex items-center">
+            <a href="index.php" class="text-white nav-link flex items-center">
                 <i class="fas fa-home mr-2"></i>Dashboard
             </a>
-            <a href="./includes/add_leningen.php" class="text-white nav-link flex items-center">
+            <a href="./pages/add_leningen_page.php" class="text-white nav-link flex items-center">
                 <i class="fas fa-plus mr-2"></i>Nieuwe Lening
             </a>
-            <a href="./pages/klanten.php" class="text-white nav-link flex items-center">
+            <a href="./pages/add_leningen_page.php" class="text-white nav-link flex items-center">
                 <i class="fas fa-users mr-2"></i>Klanten
             </a>
         </div>
@@ -76,7 +50,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="bg-white text-blue-900 px-3 py-1 rounded-full text-sm font-medium mr-3">Admin</div>
             <div class="text-white flex items-center">
                 <i class="fas fa-user-circle text-2xl"></i>
-                <span class="ml-2 mr-1">John Doe</span>
+                <span class="ml-2 mr-1">Ronny Brunswijk</span>
                 <i class="fas fa-chevron-down text-xs"></i>
             </div>
         </div>
@@ -87,7 +61,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <div>
                 <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
                 <div class="flex items-center text-sm text-gray-500 mt-1">
-                    <a href="#" class="hover:text-blue-600">Home</a>
+                    <a href="index.php" class="hover:text-blue-600">Home</a>
                     <span class="mx-2">/</span>
                     <span>Dashboard</span>
                 </div>
@@ -95,7 +69,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <div>
                 <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-200">
                     <i class="fas fa-plus mr-2"></i>
-                    <a href="./includes/add_leningen.php">
+                    <a href="./pages/add_leningen_page.php" class="text-white">
                     Nieuwe Lening
                     </a>
                 </button>
@@ -327,14 +301,9 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <td class="py-3 px-4">
                         <div class="flex space-x-1">
                             <?php if ($group_by_customer === 'yes'): ?>
-                                <!-- When grouped by customer, show view customer action -->
-                                <a href="includes/view_klant.php?klantid=<?= $lening['klantid'] ?>" 
-                                   class="action-button text-blue-600" title="Bekijk klant">
-                                    <i class="fas fa-eye"></i>
-                                </a>
                             <?php else: ?>
                                 <!-- Normal view with individual loan actions -->
-                                <a href="includes/edit_leningen.php?leningid=<?= $lening['leningid'] ?>" 
+                                <a href="includes/edit_leningen.php $lening['leningid'] ?>" 
                                    class="action-button text-yellow-600" title="Bewerken">
                                     <i class="fas fa-edit"></i>
                                 </a>
@@ -362,12 +331,6 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </tbody>
     </table>
 </div>
-    <!-- Footer -->
-    <footer class="bg-white border-t mt-12 py-4">
-        <div class="container mx-auto px-4 text-center text-sm text-gray-500">
-            <p>© 2025 BankLoan Pro. Alle rechten voorbehouden.</p>
-        </div>
-    </footer>
     <script>
         // Toggle advanced filters
         function toggleAdvancedFilters() {
