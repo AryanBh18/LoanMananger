@@ -36,6 +36,7 @@ if (!$lening) {
 <head>
     <title>Lening Bewerken</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-gray-100">
     <nav class="bg-blue-900 p-4 flex justify-between items-center">
@@ -44,34 +45,36 @@ if (!$lening) {
     </nav>
     <div class="container mx-auto p-6">
         <h1 class="text-3xl font-bold mb-4">Lening Bewerken</h1>
-        <form method="POST" class="space-y-4">
-            <label class="block">
-                Bedrag (€):
-                <input type="number" name="lening_bedrag" value="<?= htmlspecialchars($lening['lening_bedrag']) ?>" required class="w-full p-2 border rounded">
-            </label>
+        <div class="bg-white p-6 rounded shadow-md">
+            <form method="POST" class="space-y-4">
+                <label class="block">
+                    Bedrag (€):
+                    <input type="number" name="lening_bedrag" value="<?= htmlspecialchars($lening['lening_bedrag']) ?>" required class="w-full p-2 border rounded">
+                </label>
 
-            <label class="block">
-                Looptijd (maanden):
-                <input type="number" name="lening_duur" value="<?= htmlspecialchars($lening['lening_duur']) ?>" required class="w-full p-2 border rounded">
-            </label>
+                <label class="block">
+                    Looptijd (maanden):
+                    <input type="number" name="lening_duur" value="<?= htmlspecialchars($lening['lening_duur']) ?>" required class="w-full p-2 border rounded">
+                </label>
 
-            <label class="block">
-                Rente (%):
-                <input type="number" step="0.01" name="rente" value="<?= htmlspecialchars($lening['rente']) ?>" required class="w-full p-2 border rounded">
-            </label>
+                <label class="block">
+                    Rente (%):
+                    <input type="number" step="0.01" name="rente" value="<?= htmlspecialchars($lening['rente']) ?>" required class="w-full p-2 border rounded">
+                </label>
 
-            <label class="block">
-                Status:
-                <select name="lening_status" required class="w-full p-2 border rounded">
-                    <option value="In behandeling" <?= $lening['lening_status'] === 'In behandeling' ? 'selected' : '' ?>>In behandeling</option>
-                    <option value="Goedgekeurd" <?= $lening['lening_status'] === 'Goedgekeurd' ? 'selected' : '' ?>>Goedgekeurd</option>
-                    <option value="Afgekeurd" <?= $lening['lening_status'] === 'Afgekeurd' ? 'selected' : '' ?>>Afgekeurd</option>
-                    <option value="Afgesloten" <?= $lening['lening_status'] === 'Afgesloten' ? 'selected' : '' ?>>Afgesloten</option>
-                </select>
-            </label>
+                <label class="block">
+                    Status:
+                    <select name="lening_status" required class="w-full p-2 border rounded">
+                        <option value="In behandeling" <?= $lening['lening_status'] === 'In behandeling' ? 'selected' : '' ?>>In behandeling</option>
+                        <option value="Goedgekeurd" <?= $lening['lening_status'] === 'Goedgekeurd' ? 'selected' : '' ?>>Goedgekeurd</option>
+                        <option value="Afgekeurd" <?= $lening['lening_status'] === 'Afgekeurd' ? 'selected' : '' ?>>Afgekeurd</option>
+                        <option value="Afgesloten" <?= $lening['lening_status'] === 'Afgesloten' ? 'selected' : '' ?>>Afgesloten</option>
+                    </select>
+                </label>
 
-            <button type="submit" class="bg-blue-600 text-white p-2 rounded">Opslaan</button>
-        </form>
+                <button type="submit" class="bg-blue-600 text-white p-2 rounded">Opslaan</button>
+            </form>
+        </div>
     </div>
 </body>
 </html>

@@ -27,7 +27,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- Top navigation -->
+  
     <nav class="bg-gradient-to-r from-blue-900 to-blue-800 p-3 flex justify-between items-center shadow-lg sticky top-0 z-10">
         <div class="flex items-center">
             <div class="text-white text-xl font-bold flex items-center">
@@ -56,7 +56,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </nav>
     <div class="container mx-auto px-4 py-6 max-w-7xl">
-        <!-- Page header with breadcrumbs -->
+ 
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
@@ -75,7 +75,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </button>
             </div>
         </div>
-        <!-- Statistics cards -->
+
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="stat-card total-card bg-white rounded-lg shadow p-5 flex items-start">
                 <div class="flex-1">
@@ -114,7 +114,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
         </div>
-  <!-- Filter Form -->
+
 <div class="bg-white rounded-lg shadow-sm mb-8">
     <div class="p-5 border-b border-gray-200">
         <h2 class="text-lg font-semibold text-gray-800 flex items-center">
@@ -123,9 +123,9 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </h2>
     </div>
     <form method="GET" action="" class="p-5">
-        <!-- Basic filters -->
+     
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <!-- Search input -->
+         
             <div>
                 <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Zoek klant</label>
                 <div class="relative">
@@ -137,7 +137,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                            class="filter-input w-full pl-10">
                 </div>
             </div>
-            <!-- Status filter -->
+           
             <div>
                 <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <div class="relative">
@@ -154,7 +154,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                 </div>
             </div>
-            <!-- Groeperen per klant -->
+         
             <div>
                 <label for="group_by_customer" class="block text-sm font-medium text-gray-700 mb-1">Groeperen</label>
                 <div class="relative">
@@ -168,10 +168,10 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
         </div>
-        <!-- Advanced filters section -->
+       
         <div id="advancedFilters" class="border-t border-gray-100 pt-5" <?= $advancedFiltersActive ? '' : 'style="display: none;"' ?>>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                <!-- Date range -->
+              
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Datum bereik</label>
                     <div class="grid grid-cols-2 gap-4">
@@ -193,7 +193,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                 </div>
-                <!-- Amount range -->
+            
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Bedrag bereik</label>
                     <div class="grid grid-cols-2 gap-4">
@@ -236,7 +236,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </form>
 </div>
- <!-- Loans table -->
+ 
 <div class="table-container bg-white mb-6">
     <table class="min-w-full loan-table">
         <thead>
@@ -254,7 +254,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <?php if (count($lendingen) > 0): ?>
                 <?php foreach ($lendingen as $lening): ?>
                 <?php 
-                    // Generate a color for the avatar based on customer name
+                    
                     $colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-yellow-500', 'bg-indigo-500'];
                     $colorIndex = crc32($lening['klant_naam']) % count($colors);
                     $avatarColor = $colors[$colorIndex];
@@ -302,7 +302,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="flex space-x-1">
                             <?php if ($group_by_customer === 'yes'): ?>
                             <?php else: ?>
-                                <!-- Normal view with individual loan actions -->
+                                
                                 <a href="includes/edit_leningen.php?leningid=<?= $lening['leningid'] ?>" 
                                    class="action-button text-yellow-600" title="Bewerken">
                                     <i class="fas fa-edit"></i>
@@ -332,7 +332,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </table>
 </div>
     <script>
-        // Toggle advanced filters
+        
         function toggleAdvancedFilters() {
             const advancedFilters = document.getElementById('advancedFilters');
             const toggleText = document.getElementById('toggleText');
