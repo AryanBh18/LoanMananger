@@ -1,3 +1,5 @@
+//if it works, dont touch it please.
+//PS i tried optimizing it but i got $error_message.
 <?php
 require 'config.php';
 

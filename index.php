@@ -42,7 +42,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <a href="./pages/add_leningen_page.php" class="text-white nav-link flex items-center">
                 <i class="fas fa-plus mr-2"></i>Nieuwe Lening
             </a>
-            <a href="./pages/add_leningen_page.php" class="text-white nav-link flex items-center">
+            <a href="./pages/add_klanten_page.php" class="text-white nav-link flex items-center">
                 <i class="fas fa-users mr-2"></i>Klanten
             </a>
         </div>
@@ -303,7 +303,7 @@ $lendingen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <?php if ($group_by_customer === 'yes'): ?>
                             <?php else: ?>
                                 <!-- Normal view with individual loan actions -->
-                                <a href="includes/edit_leningen.php $lening['leningid'] ?>" 
+                                <a href="includes/edit_leningen.php?leningid=<?= $lening['leningid'] ?>" 
                                    class="action-button text-yellow-600" title="Bewerken">
                                     <i class="fas fa-edit"></i>
                                 </a>
