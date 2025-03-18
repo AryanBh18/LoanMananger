@@ -40,10 +40,4 @@
         $params[] = $amount_max;
     }
     $whereClause = !empty($whereConditions) ? "WHERE " . implode(" AND ", $whereConditions) : "";
-
-    // SQL injectionnn prevention
-    $valid_sort_columns = ['klant_naam', 'lening_bedrag', 'lening_duur', 'rente', 'lening_status', 'datum_aanvraag'];
-    $sort_by = in_array($sort_by, $valid_sort_columns) ? $sort_by : 'datum_aanvraag';
-    $valid_sort_orders = ['ASC', 'DESC'];
-    $sort_order = in_array(strtoupper($sort_order), $valid_sort_orders) ? strtoupper($sort_order) : 'DESC';
 ?>
